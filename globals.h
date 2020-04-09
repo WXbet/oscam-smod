@@ -424,9 +424,10 @@
 #define D_CLIENTECM				0x0400	// Debug Client ECMs
 #define D_CSP					0x0800	// Debug CSP
 #define D_CWC					0x1000	// Debug CWC
+#define D_CW_CACHE				0x2000	// Debug CW Cache
 #define D_ALL_DUMP				0xFFFF	// dumps all
 
-#define MAX_DEBUG_LEVELS		13
+#define MAX_DEBUG_LEVELS		14
 
 /////// phoenix readers which need baudrate setting and timings need to be guarded by OSCam: BEFORE R_MOUSE
 #define R_DB2COM1				0x1		// Reader Dbox2 @ com1
@@ -1057,7 +1058,9 @@ typedef struct ecm_request_t
 
 #if defined MODULE_GBOX
 	uint32_t		gbox_crc;						// rcrc for gbox, used to identify ECM task in peer responses
-	uint16_t		gbox_ecm_id;
+	uint16_t		gbox_cw_src_peer;
+	uint16_t		gbox_ecm_src_peer;
+	uint8_t			gbox_ecm_dist;
 	uint8_t			gbox_ecm_status;
 	LLIST			*gbox_cards_pending;			// type gbox_card_pending
 #endif
@@ -1855,11 +1858,13 @@ struct s_reader										// contains device info, reader info and card info
 	uint8_t			gbox_maxdist;
 	uint8_t			gbox_maxecmsend;
 	uint8_t			gbox_reshare;
-	uint8_t			gbox_cccam_reshare;
+	int8_t			gbox_cccam_reshare;
 	char			last_gsms[128];
 	uint16_t		gbox_remm_peer;
 	uint16_t		gbox_gsms_peer;
 	uint8_t			gbox_force_remm;
+	uint16_t		gbox_cw_src_peer;
+	uint8_t			gbox_crd_slot_lev;
 #endif
 
 #ifdef MODULE_PANDORA
@@ -2258,7 +2263,7 @@ struct s_config
 	uint8_t			log_hello;
 	uint8_t			dis_attack_txt;
 	char			*gbox_tmp_dir;
-	uint8_t			ccc_reshare;
+	uint8_t			cc_gbx_reshare_en;
 	uint16_t		gbox_ignored_peer[GBOX_MAX_IGNORED_PEERS];
 	uint8_t			gbox_ignored_peer_num;
 	uint16_t		accept_remm_peer[GBOX_MAX_REMM_PEERS];
@@ -2269,7 +2274,8 @@ struct s_config
 	uint8_t			gbox_msg_type;
 	uint16_t		gbox_dest_peers[GBOX_MAX_DEST_PEERS];
 	uint8_t			gbox_dest_peers_num;
-	char			gbox_msg_txt[GBOX_MAX_MSG_TXT+1];
+	char				gbox_msg_txt[GBOX_MAX_MSG_TXT+1];
+	CAIDTAB			ccc_gbx_check_caidtab;
 #endif
 #ifdef MODULE_SERIAL
 	char			*ser_device;
@@ -2388,6 +2394,10 @@ struct s_config
 
 	int32_t			max_cache_time;					// seconds ecms are stored in ecmcwcache
 	int32_t			max_hitcache_time;				// seconds hits are stored in cspec_hitcache (to detect dyn wait_time)
+	
+	uint32_t		cw_cache_size;
+	uint32_t		cw_cache_memory;
+	CWCHECKTAB		cw_cache_settings;
 
 	int8_t			reload_useraccounts;
 	int8_t			reload_readers;
